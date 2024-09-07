@@ -1,138 +1,201 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Socket.IO Chat</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
     <style>
-        body {
-            margin: 0;
-            padding-bottom: 3rem;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        }
+      body {
+        margin: 0;
+        padding-bottom: 3rem;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background-color: #f8f9fa;
+      }
 
-        #username-section {
-            display: flex;
-            justify-content: center;
-            padding: 1rem;
-        }
+      #channels {
+        width: 200px;
+        border-right: 1px solid #ddd;
+        padding: 1rem;
+      }
 
-        #username {
-            padding: 0.5rem;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-            margin-right: 0.5rem;
-        }
+      #messages-section {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        padding: 1rem;
+        overflow: hidden;
+      }
 
-        #setUsername {
-            padding: 0.5rem 1rem;
-            border-radius: 5px;
-            background-color: #007bff;
-            border: none;
-            color: white;
-            cursor: pointer;
-        }
+      #messages {
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+        flex-grow: 1;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        border-radius: 0.5rem;
+        padding: 0.5rem;
+        background-color: #fff;
+      }
 
-        #form {
-            background: rgba(0, 0, 0, 0.15);
-            padding: 0.25rem;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            display: flex;
-            height: 3rem;
-            box-sizing: border-box;
-            backdrop-filter: blur(10px);
-        }
+      #messages > li {
+        padding: 0.5rem 1rem;
+        border-bottom: 1px solid #f1f1f1;
+      }
 
-        #input {
-            border: none;
-            padding: 0 1rem;
-            flex-grow: 1;
-            border-radius: 2rem;
-            margin: 0.25rem;
-        }
+      #messages > li:last-child {
+        border-bottom: none;
+      }
 
-        #input:focus {
-            outline: none;
-        }
-
-        #form > button {
-            background: #333;
-            border: none;
-            padding: 0 1rem;
-            margin: 0.25rem;
-            border-radius: 3px;
-            outline: none;
-            color: #fff;
-        }
-
-        #messages {
-            list-style-type: none;
-            margin: 0;
-            padding: 0;
-        }
-
-        #messages > li {
-            padding: 0.5rem 1rem;
-        }
-
-        #messages > li:nth-child(odd) {
-            background: #efefef;
-        }
+      #input:focus {
+        outline: none;
+        box-shadow: none;
+      }
     </style>
-</head>
-<body>
-    <div id="username-section">
-        <input id="username" placeholder="Set your username" autocomplete="off">
-        <button id="setUsername">Set Username</button>
+  </head>
+  <body>
+    <div class="container p-3 bg-light rounded shadow">
+      <div class="row">
+        <div class="col-md-3" id="channels">
+          <h5>Channels</h5>
+          <button
+            class="btn btn-outline-primary btn-block my-1 channel-button"
+            data-room="general"
+          >
+            General
+          </button>
+          <button
+            class="btn btn-outline-primary btn-block my-1 channel-button"
+            data-room="jokes"
+          >
+            Jokes
+          </button>
+          <button
+            class="btn btn-outline-primary btn-block my-1 channel-button"
+            data-room="coding"
+          >
+            Coding
+          </button>
+        </div>
+        <div class="col-md-9 d-flex flex-column" id="messages-section">
+          <div id="username-section" class="mb-3">
+            <input
+              id="username"
+              class="form-control me-2 mb-2"
+              placeholder="Set your username"
+              autocomplete="off"
+            />
+            <button id="setUsername" class="btn btn-primary">
+              Set Username
+            </button>
+          </div>
+
+          <ul id="messages" class="mb-3" style="min-height: 50vh"></ul>
+
+          <form id="form" class="d-flex">
+            <input
+              id="input"
+              class="form-control me-2"
+              autocomplete="off"
+              placeholder="Type your message..."
+            />
+            <button class="btn btn-dark">Send</button>
+          </form>
+        </div>
+      </div>
     </div>
-
-    <ul id="messages"></ul>
-
-    <form id="form" action="">
-        <input id="input" autocomplete="off">
-        <button>Send</button>
-    </form>
 
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script>
-        const socket = io();
+      const socket = io();
+      const messages = document.getElementById("messages");
+      const form = document.getElementById("form");
+      const input = document.getElementById("input");
+      const usernameInput = document.getElementById("username");
+      const setUsernameButton = document.getElementById("setUsername");
+      const channelButtons = document.querySelectorAll(".channel-button");
+      let currentRoom = "general"; // default room after setting username ;D
 
-        const messages = document.getElementById("messages");
-        const form = document.getElementById("form");
-        const input = document.getElementById("input");
-        const usernameInput = document.getElementById("username");
-        const setUsernameButton = document.getElementById("setUsername");
+      // Set username when the button is clicked
+      setUsernameButton.addEventListener("click", () => {
+        const username = usernameInput.value.trim();
+        if (username) {
+          socket.emit("set username", username);
+          usernameInput.disabled = true;
+          setUsernameButton.disabled = true;
+          joinRoom(currentRoom); // Automatically join the default room
+        }
+      });
 
-        // Set username when the button is clicked
-        setUsernameButton.addEventListener("click", () => {
-            const username = usernameInput.value.trim(); // Remove whitespace
-            if (username) {
-                socket.emit("set username", username);
-                usernameInput.disabled = true;
-                setUsernameButton.disabled = true;
-            }
+      // Send the message to the server when the form is submitted
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        if (input.value) {
+          const messageContent = input.value;
+          const sender = usernameInput.value;
+          const chatName = currentRoom;
+
+          socket.emit("send message", {
+            content: messageContent,
+            to: currentRoom,
+            sender,
+            chatName,
+            isChannel: true,
+          });
+
+          // Display the sent message immediately without waiting for server response
+          displayMessage(sender, messageContent, chatName);
+
+          input.value = "";
+        }
+      });
+
+      // Handle receiving messages
+      socket.on("new message", function (msg) {
+        displayMessage(msg.sender, msg.content, msg.chatName);
+      });
+
+      // Display the message in the chat
+      function displayMessage(sender, content, chatName) {
+        const item = document.createElement("li");
+        item.textContent = `[${chatName}] ${sender}: ${content}`;
+        messages.appendChild(item);
+        messages.scrollTop = messages.scrollHeight; // Scroll to the bottom
+      }
+
+      // Join a room when a channel button is clicked
+      channelButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const newRoom = button.getAttribute("data-room");
+          if (newRoom !== currentRoom) {
+            joinRoom(newRoom);
+          }
         });
+      });
 
-        // Send the message to the server when the form is submitted
-        form.addEventListener("submit", function (e) {
-            e.preventDefault();
-            if (input.value) {
-                socket.emit("chat message", input.value);
-                input.value = "";
-            }
+      // Function to join a room and update messages
+      function joinRoom(roomName) {
+        socket.emit("join room", roomName, (roomMessages) => {
+          // Clear previous messages
+          messages.innerHTML = "";
+          // Display the new room messages
+          roomMessages.forEach(({ sender, content }) => {
+            displayMessage(sender, content, roomName);
+          });
+          messages.scrollTop = messages.scrollHeight; // Scroll to the bottom
         });
-
-        // Display messages from the server
-        socket.on("chat message", function (msg) {
-            const item = document.createElement("li");
-            item.textContent = msg;
-            messages.appendChild(item);
-            window.scrollTo(0, document.body.scrollHeight);
-        });
+        currentRoom = roomName; // Update current room
+      }
     </script>
-</body>
+  </body>
 </html>
