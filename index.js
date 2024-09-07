@@ -5,6 +5,13 @@ const server = http.createServer(app);
 const { Server } = require("socket.io");
 const io = new Server(server);
 const path = require("path");
+const { useAzureSocketIO } = require("@azure/web-pubsub-socket.io");
+
+// Use the following line to integrate with Web PubSub for Socket.IO
+useAzureSocketIO(io, {
+  hub: "Hub", // The hub name can be any valid string.
+  connectionString: process.argv[2]
+});
 
 app.use(express.static(path.join(__dirname, "public"))); // Serve static files from the 'public' folder
 

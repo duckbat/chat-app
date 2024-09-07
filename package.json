@@ -11,6 +11,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@azure/web-pubsub-socket.io": "^1.2.0",
     "cors": "^2.8.5",
     "express": "^4.19.2",
     "http": "^0.0.1-security",

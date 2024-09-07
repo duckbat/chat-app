@@ -117,7 +117,10 @@
 
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script>
-      const socket = io();
+      const io = require("socket.io-client");
+      const socket = io("<web-pubsub-socketio-endpoint>", {
+    path: "/clients/socketio/hubs/Hub",
+});
       const messages = document.getElementById("messages");
       const form = document.getElementById("form");
       const input = document.getElementById("input");
